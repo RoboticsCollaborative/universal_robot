@@ -77,3 +77,24 @@ install(DIRECTORY include/${PROJECT_NAME}/
 install(FILES ur_moveit_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+
+find_package(PythonLibs 2.7 REQUIRED)
+
+###########
+## Build ##
+###########
+
+PYTHON_ADD_MODULE(ur_kin_py src/ur_kin_py.cpp)
+target_link_libraries(ur_kin_py ur5_kin boost_python boost_numpy ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} )
+
+set_target_properties(ur_kin_py PROPERTIES
+                      LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION})
+
+#############
+## Install ##
+#############
+install(TARGETS ur_kin_py
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
+)

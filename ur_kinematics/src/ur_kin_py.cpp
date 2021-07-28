@@ -36,13 +36,13 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-#include <boost/numpy.hpp>
+#include <boost/python/numpy.hpp>
 #include <boost/scoped_array.hpp>
 
 #include <ur_kinematics/ur_kin.h>
 
 namespace p = boost::python;
-namespace np = boost::numpy;
+namespace np = boost::python::numpy;
 
 np::ndarray forward_wrapper(np::ndarray const & q_arr) {
   if(q_arr.get_dtype() != np::dtype::get_builtin<double>()) {
@@ -58,9 +58,29 @@ np::ndarray forward_wrapper(np::ndarray const & q_arr) {
     p::throw_error_already_set();
   }
   Py_intptr_t shape[2] = { 4, 4 };
-  np::ndarray result = np::zeros(2,shape,np::dtype::get_builtin<double>()); 
-  ur_kinematics::forward(reinterpret_cast<double*>(q_arr.get_data()), 
+  np::ndarray result = np::zeros(2,shape,np::dtype::get_builtin<double>());
+  ur_kinematics::forward(reinterpret_cast<double*>(q_arr.get_data()),
                          reinterpret_cast<double*>(result.get_data()));
+  return result;
+}
+
+np::ndarray forward_link_wrapper(np::ndarray const & q_arr) {
+  if(q_arr.get_dtype() != np::dtype::get_builtin<double>()) {
+    PyErr_SetString(PyExc_TypeError, "Incorrect array data type");
+    p::throw_error_already_set();
+  }
+  if(q_arr.get_nd() != 1) {
+    PyErr_SetString(PyExc_TypeError, "Incorrect number of dimensions");
+    p::throw_error_already_set();
+  }
+  if(q_arr.shape(0) != 4) {
+    PyErr_SetString(PyExc_TypeError, "Incorrect shape (should be 4)");
+    p::throw_error_already_set();
+  }
+  Py_intptr_t shape[2] = { 4, 4 };
+  np::ndarray result = np::zeros(2,shape,np::dtype::get_builtin<double>());
+  ur_kinematics::forward_link(reinterpret_cast<double*>(q_arr.get_data()),
+                              reinterpret_cast<double*>(result.get_data()));
   return result;
 }
 
@@ -88,5 +108,6 @@ np::ndarray inverse_wrapper(np::ndarray const & array, PyObject * q6_des_py) {
 BOOST_PYTHON_MODULE(ur_kin_py) {
   np::initialize();  // have to put this in any module that uses Boost.NumPy
   p::def("forward", forward_wrapper);
+  p::def("forward_link", forward_link_wrapper);
   p::def("inverse", inverse_wrapper);
 }

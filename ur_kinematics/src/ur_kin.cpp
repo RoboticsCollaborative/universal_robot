@@ -24,15 +24,25 @@ namespace ur_kinematics {
     #endif
 
     //#define UR5_PARAMS
+    // #ifdef UR5_PARAMS
+    // const double d1 =  0.089159;
+    // const double a2 = -0.42500;
+    // const double a3 = -0.39225;
+    // const double d4 =  0.10915;
+    // const double d5 =  0.09465;
+    // const double d6 =  0.0823;
+    // #endif
+
+    //#define UR5e_PARAMS
     #ifdef UR5_PARAMS
-    const double d1 =  0.089159;
+    const double d1 =  0.1625;
     const double a2 = -0.42500;
     const double a3 = -0.39225;
-    const double d4 =  0.10915;
-    const double d5 =  0.09465;
-    const double d6 =  0.0823;
+    const double d4 =  0.1333;
+    const double d5 =  0.0997;
+    const double d6 =  0.0996;
     #endif
-    
+
     //#define UR3_PARAMS
     #ifdef UR3_PARAMS
     const double d1 =  0.1519;
@@ -50,7 +60,7 @@ namespace ur_kinematics {
     double s3 = sin(*q), c3 = cos(*q); q23 += *q; q234 += *q; q++;
     double s4 = sin(*q), c4 = cos(*q); q234 += *q; q++;
     double s5 = sin(*q), c5 = cos(*q); q++;
-    double s6 = sin(*q), c6 = cos(*q); 
+    double s6 = sin(*q), c6 = cos(*q);
     double s23 = sin(q23), c23 = cos(q23);
     double s234 = sin(q234), c234 = cos(q234);
     *T = c234*c1*s5 - c5*s1; T++;
@@ -68,7 +78,7 @@ namespace ur_kinematics {
     *T = 0.0; T++; *T = 0.0; T++; *T = 0.0; T++; *T = 1.0;
   }
 
-  void forward_all(const double* q, double* T1, double* T2, double* T3, 
+  void forward_all(const double* q, double* T1, double* T2, double* T3,
                                     double* T4, double* T5, double* T6) {
     double s1 = sin(*q), c1 = cos(*q); q++; // q1
     double q23 = *q, q234 = *q, s2 = sin(*q), c2 = cos(*q); q++; // q2
@@ -194,10 +204,37 @@ namespace ur_kinematics {
     }
   }
 
+  void forward_link(const double* q, double* T) {
+    double theta = *q, ct = cos(theta), st = sin(theta); q++;
+    double d = *q; q++;
+    double a = *q; q++;
+    double alpha = *q, ca = cos(alpha), sa = sin(alpha);
+
+    if(T != NULL) {
+      *T = ct; T++;
+      *T = -st; T++;
+      *T = 0; T++;
+      *T = a; T++;
+      *T = st*ca; T++;
+      *T = ct*ca; T++;
+      *T = -sa; T++;
+      *T = -sa*d; T++;
+      *T = st*sa; T++;
+      *T = ct*sa; T++;
+      *T = ca; T++;
+      *T = ca*d; T++;
+      *T = 0; T++;
+      *T = 0; T++;
+      *T = 0; T++;
+      *T = 1; T++;
+    }
+
+  }
+
   int inverse(const double* T, double* q_sols, double q6_des) {
     int num_sols = 0;
-    double T02 = -*T; T++; double T00 =  *T; T++; double T01 =  *T; T++; double T03 = -*T; T++; 
-    double T12 = -*T; T++; double T10 =  *T; T++; double T11 =  *T; T++; double T13 = -*T; T++; 
+    double T02 = -*T; T++; double T00 =  *T; T++; double T01 =  *T; T++; double T03 = -*T; T++;
+    double T12 = -*T; T++; double T10 =  *T; T++; double T11 =  *T; T++; double T13 = -*T; T++;
     double T22 =  *T; T++; double T20 = -*T; T++; double T21 = -*T; T++; double T23 =  *T;
 
     ////////////////////////////// shoulder rotate joint (q1) //////////////////////////////
@@ -248,7 +285,7 @@ namespace ur_kinematics {
         else
           q1[0] = 2.0*PI + pos;
         if(neg >= 0.0)
-          q1[1] = neg; 
+          q1[1] = neg;
         else
           q1[1] = 2.0*PI + neg;
       }
@@ -282,7 +319,7 @@ namespace ur_kinematics {
           if(fabs(s5) < ZERO_THRESH)
             q6 = q6_des;
           else {
-            q6 = atan2(SIGN(s5)*-(T01*s1 - T11*c1), 
+            q6 = atan2(SIGN(s5)*-(T01*s1 - T11*c1),
                        SIGN(s5)*(T00*s1 - T10*c1));
             if(fabs(q6) < ZERO_THRESH)
               q6 = 0.0;
@@ -296,7 +333,7 @@ namespace ur_kinematics {
           double c6 = cos(q6), s6 = sin(q6);
           double x04x = -s5*(T02*c1 + T12*s1) - c5*(s6*(T01*c1 + T11*s1) - c6*(T00*c1 + T10*s1));
           double x04y = c5*(T20*c6 - T21*s6) - T22*s5;
-          double p13x = d5*(s6*(T00*c1 + T10*s1) + c6*(T01*c1 + T11*s1)) - d6*(T02*c1 + T12*s1) + 
+          double p13x = d5*(s6*(T00*c1 + T10*s1) + c6*(T01*c1 + T11*s1)) - d6*(T02*c1 + T12*s1) +
                         T03*c1 + T13*s1;
           double p13y = T23 - d1 - d6*T22 + d5*(T21*c6 + T20*s6);
 
@@ -329,9 +366,9 @@ namespace ur_kinematics {
             if(fabs(q4[k]) < ZERO_THRESH)
               q4[k] = 0.0;
             else if(q4[k] < 0.0) q4[k] += 2.0*PI;
-            q_sols[num_sols*6+0] = q1[i];    q_sols[num_sols*6+1] = q2[k]; 
-            q_sols[num_sols*6+2] = q3[k];    q_sols[num_sols*6+3] = q4[k]; 
-            q_sols[num_sols*6+4] = q5[i][j]; q_sols[num_sols*6+5] = q6; 
+            q_sols[num_sols*6+0] = q1[i];    q_sols[num_sols*6+1] = q2[k];
+            q_sols[num_sols*6+2] = q3[k];    q_sols[num_sols*6+3] = q4[k];
+            q_sols[num_sols*6+4] = q5[i][j]; q_sols[num_sols*6+5] = q6;
             num_sols++;
           }
 
@@ -436,8 +473,8 @@ int main(int argc, char* argv[])
   double q_sols[8*6];
   int num_sols;
   num_sols = inverse(T, q_sols);
-  for(int i=0;i<num_sols;i++) 
-    printf("%1.6f %1.6f %1.6f %1.6f %1.6f %1.6f\n", 
+  for(int i=0;i<num_sols;i++)
+    printf("%1.6f %1.6f %1.6f %1.6f %1.6f %1.6f\n",
        q_sols[i*6+0], q_sols[i*6+1], q_sols[i*6+2], q_sols[i*6+3], q_sols[i*6+4], q_sols[i*6+5]);
   for(int i=0;i<=4;i++)
     printf("%f ", PI/2.0*i);
